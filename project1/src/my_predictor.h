@@ -3,6 +3,8 @@
 #include <list>
 #include <vector>
 #include <math.h>
+#include <stdint.h>
+#include <cstddef>
 #define HISTORY_LENGTH	8
 #define number_of_perceptrons 1024
 #define MASK        0x00000001
