@@ -78,7 +78,7 @@ int main (int argc, char *argv[]) {
 	// give final mispredictions per kilo-instruction and exit.
 	// each trace represents exactly 100 million instructions.
 
-	printf ("%0.3f MPKI\n", 1000.0 * (dmiss / 1e8));
+	printf("%0.3f MPKI\n", 1000.0 * (dmiss / 1e8));
 	delete p;
 	exit (0);
 }

@@ -6,7 +6,7 @@
 // This is a perceptron branch predictor created by zhangwenrui@tamu.edu
 #include <list>
 #include <math.h>
-#define HISTORY_LENGTH	16
+#define HISTORY_LENGTH	256
 #define number_of_perceptrons 32
 #define TABLE_BITS	15
 using namespace std;
