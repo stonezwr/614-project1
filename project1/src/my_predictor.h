@@ -5,10 +5,10 @@
 #include <math.h>
 #include <stdint.h>
 #include <cstddef>
-#define HISTORY_LENGTH	8
-#define number_of_perceptrons 1024
+#define HISTORY_LENGTH	6
+#define number_of_perceptrons 2552
 #define MASK        0x00000001
-#define MAX_WEIGHT 128
+#define MAX_WEIGHT 127
 #define MIN_WEIGHT -128
 
 using namespace std;
