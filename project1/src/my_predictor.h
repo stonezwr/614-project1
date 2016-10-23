@@ -1,147 +1,127 @@
 // my_predictor.h
 // This is a perceptron branch predictor created by zhangwenrui@tamu.edu
-#include <list>
-#include <vector>
+
 #include <math.h>
 #include <stdint.h>
 #include <cstddef>
+
 #define HISTORY_LENGTH	6
 #define number_of_perceptrons 2552
-#define MASK        0x00000001
+#define MASK 		0x000003FF
 #define MAX_WEIGHT 127
-#define MIN_WEIGHT -128
+#define MIN_WEIGHT -128 
 
-using namespace std;
+//restrict each weight to one byte	
+   
 
-class my_update : public branch_update {
+class my_update : public branch_update 
+{
 public:
-	unsigned int v[HISTORY_LENGTH]; //represent the last h perceptron;
-    int yout;
-    my_update(){
-        for (int i = 0; i < HISTORY_LENGTH; ++i)
-        {
-            v[i]=0;
-        }
-        yout=0;
-    }
+	unsigned int v[HISTORY_LENGTH]; // record perceptron index
+	int yout; // table output
+	my_update (void)
+	{
+		for (int i = 0; i < HISTORY_LENGTH; i++)
+			v[i] = 0;
+		yout = 0;
+	}
 };
 
-class my_predictor : public branch_predictor {
+class my_predictor : public branch_predictor 
+{
 public:
+	int W[H][number_of_perceptrons]; // table of weights	
+	uint64_t SG; // hist reg
+	uint64_t path; // path reg
 
-    int W[number_of_perceptrons][HISTORY_LENGTH+1];
-    vector<int> SR;
-    vector<int> R;
+	my_predictor (void) 
+	{ 
+		// initialize the weight table to 0
+		for (int i = 0; i < HISTORY_LENGTH; i++) 
+		{
+			for (int j = 0; j < number_of_perceptrons; j++)
+			{
+				W[i][j] = 0;
+			}
+		}
+		
+		SG = 0;
+		
+	}
 	my_update u;
 	branch_info bi;
-	uint64_t G;
-    uint64_t SG;
-    uint64_t path_reg;
-    int perceptron;
 
-	my_predictor(){
-        int i,j;
-        for (i=0; i<number_of_perceptrons; i++) {
-            for (j=0; j<HISTORY_LENGTH; j++) {
-                W[i][j]=0;
-            }
-        }
-        SR.resize(HISTORY_LENGTH+1);
-        R.resize(HISTORY_LENGTH+1);
-        G=0;
-        SG=0;
-	}
-    
-	branch_update *predict (branch_info & b) {
+	// branch prediction
+	branch_update *predict (branch_info & b) 
+	{
 		bi = b;
-        int j;
-        int k;
-        if(b.br_flags&&BR_CONDITIONAL){
-            perceptron=b.address%number_of_perceptrons;
-            u.v[0]=perceptron;
-            u.yout=W[perceptron][0]+SR[HISTORY_LENGTH];
-            unsigned int seg;
-            if (u.yout>=0) {
-                u.direction_prediction(true);
+		if (b.br_flags & BR_CONDITIONAL) 
+		{
+			u.v[0] = (b.address) % (number_of_perceptrons+5);
+			u.yout = W[0][u.v[0]];
+			unsigned int seg; 			
+			for (int i = 1; i < H; i++) 
+			{
+				// create segments starting from the most recent history bits and then 
+				// moving left
+				seg = ((SG ^ (path)) & (MASK << (i-1)*10)) >> (i-1)*10;
+				u.v[i] = ((seg) ^ (b.address << 1)) % (number_of_perceptrons-1);
+				u.yout += W[i][u.v[i]];	
             }
-            else{
-                u.direction_prediction(false);
-            }
-            for (j=1; j<=HISTORY_LENGTH; j++) {
-                k=HISTORY_LENGTH-j;
-                seg = ((SG ^ (path_reg)) & (MASK << (j-1)*10)) >> (i-1)*10;
-                u.v[i] = ((seg) ^ (b.address << 1)) % number_of_perceptrons;
-                if (u.direction_prediction())
-                {
-                    SR[k+1]=SR[k]+W[u.v[i]][j];
-                }
-                else{
-                    SR[k+1]=SR[k]-W[u.v[i]][j];
-                }
-            }
-            SR[0]=0;
-            SG <<= 1;
-            SG |= u.direction_prediction();
-        }
-        else{
-            u.direction_prediction(false);
-        }
-        u.target_prediction(0);
-        return &u;
-        
+			if (u.yout >= 0) 
+			{
+				u.direction_prediction (true);
+			}
+			else
+			{
+				u.direction_prediction (false);
+			}
+		} 
+		else
+		{
+			u.direction_prediction (true); // unconditional branch
+		}
+		u.target_prediction (0); // not computing target address
+		return &u;
 	}
 
-	void update (branch_update *u, bool taken, unsigned int target) {
-        int j;
-        int k;
-        int threshold;
-        my_update *mu;
-        mu=(my_update *)u;
-        threshold=(int)1.93*HISTORY_LENGTH+14;
-        if (bi.br_flags && BR_CONDITIONAL) {
-            if (taken!=u->direction_prediction()||abs(mu->yout)<=threshold) {
-                if (taken) {
-                    W[perceptron][0]+=1;
-                }
-                else{
-                    W[perceptron][0]-=1;
-                }
-                for(j=1; j<=HISTORY_LENGTH; j++) {
-                    k=(*mu).v[j-1];
-                    if (taken) {
-                        if (W[k][j]<MAX_WEIGHT)
-                        {
-                            W[k][j]+=1;
-                        } 
-                    }
-                    else{
-                        if(W[k][j]>MIN_WEIGHT){
-                            W[k][j]-=1;
-                        }
-                    }
-                }
-            }
-            perceptron=bi.address%number_of_perceptrons;
-            for (j=1; j<=HISTORY_LENGTH; j++) {
-                k=HISTORY_LENGTH-j;
-                if (taken)
-                {
-                    R[k+1]=R[k]+W[u.v[j]][j];
-                }
-                else{
-                    R[k+1]=R[k]-W[u.v[j]][j];
-                }
-            }
-            R[0]=0;
-        }
-        G <<= 1;
-        G |= taken;
-        if (taken!=u->direction_prediction())
-        {
-            SG=G;
-            SR=R;
-        }
-        path_reg=bi.address&0xF;
-        path_reg<<=1;
-    }
+	// training algorithm
+	void update (branch_update *u, bool taken, unsigned int target) 
+	{
+		float threshold;
+		threshold = (int)(1.89*HISTORY_LENGTH + HISTORY_LENGTH/2);
+		int k;
+		my_update *mu;
+		mu=(my_update *)u;
+		if (bi.br_flags & BR_CONDITIONAL)
+		{
+			if( u->direction_prediction() != taken || abs(mu->yout) < threshold)
+			{
+				for ( int i = 0; i < HISTORY_LENGTH; i++)
+				{
+					k=mu->v[i];
+					if (taken)
+					{
+						if (W[i][k] < MAX_WEIGHT)
+							W[i][k]++;
+					}
+					else 
+					{
+						if (W[i][k] > MIN_WEIGHT)
+							W[i][k]--;
+					}
+				}
+			}
+		
+			// update the hist reg
+			SG <<= 1;
+			SG |= taken;
+			// update the path reg
+			// take the last 4 bits of branch addr for path hist reg
+			path = bi.address & 0xF;
+			path <<= 1;
+
+		}
+	}
 };
+	
