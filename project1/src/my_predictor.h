@@ -36,6 +36,7 @@ public:
 	branch_info bi;
 	uint64_t G;
     uint64_t SG;
+    uint64_t path_reg;
     int perceptron;
 
 	my_predictor(){
@@ -59,6 +60,7 @@ public:
             perceptron=b.address%number_of_perceptrons;
             u.v[0]=perceptron;
             u.yout=W[perceptron][0]+SR[HISTORY_LENGTH];
+            unsigned int seg;
             if (u.yout>=0) {
                 u.direction_prediction(true);
             }
@@ -67,12 +69,14 @@ public:
             }
             for (j=1; j<=HISTORY_LENGTH; j++) {
                 k=HISTORY_LENGTH-j;
+                seg = ((SG ^ (path_reg)) & (MASK << (i-1)*10)) >> (i-1)*10;
+                u.index[i] = ((seg) ^ (b.address << 1)) % number_of_perceptrons;
                 if (u.direction_prediction())
                 {
-                    SR[k+1]=SR[k]+W[perceptron][j];
+                    SR[k+1]=SR[k]+W[u.index[i]][j];
                 }
                 else{
-                    SR[k+1]=SR[k]-W[perceptron][j];
+                    SR[k+1]=SR[k]-W[u.index[i]][j];
                 }
             }
             SR[0]=0;
@@ -104,7 +108,7 @@ public:
                 }
                 for(j=1; j<=HISTORY_LENGTH; j++) {
                     k=(*mu).v[j-1];
-                    if (SG&(MASK<<(j-1))) {
+                    if (taken) {
                         if (W[k][j]<MAX_WEIGHT)
                         {
                             W[k][j]+=1;
@@ -122,10 +126,10 @@ public:
                 k=HISTORY_LENGTH-j;
                 if (taken)
                 {
-                    R[k+1]=R[k]+W[perceptron][j];
+                    R[k+1]=R[k]+W[u.index[i]][j];
                 }
                 else{
-                    R[k+1]=R[k]-W[perceptron][j];
+                    R[k+1]=R[k]-W[u.index[i]][j];
                 }
             }
             R[0]=0;
@@ -137,5 +141,7 @@ public:
             SG=G;
             SR=R;
         }
+        path_reg=bi.address&0xF;
+        path_reg<<=1;
     }
 };
