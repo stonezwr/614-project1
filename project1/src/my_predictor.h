@@ -69,14 +69,14 @@ public:
             }
             for (j=1; j<=HISTORY_LENGTH; j++) {
                 k=HISTORY_LENGTH-j;
-                seg = ((SG ^ (path_reg)) & (MASK << (i-1)*10)) >> (i-1)*10;
-                u.index[i] = ((seg) ^ (b.address << 1)) % number_of_perceptrons;
+                seg = ((SG ^ (path_reg)) & (MASK << (j-1)*10)) >> (i-1)*10;
+                u.v[i] = ((seg) ^ (b.address << 1)) % number_of_perceptrons;
                 if (u.direction_prediction())
                 {
-                    SR[k+1]=SR[k]+W[u.index[i]][j];
+                    SR[k+1]=SR[k]+W[u.v[i]][j];
                 }
                 else{
-                    SR[k+1]=SR[k]-W[u.index[i]][j];
+                    SR[k+1]=SR[k]-W[u.v[i]][j];
                 }
             }
             SR[0]=0;
@@ -126,10 +126,10 @@ public:
                 k=HISTORY_LENGTH-j;
                 if (taken)
                 {
-                    R[k+1]=R[k]+W[u.index[i]][j];
+                    R[k+1]=R[k]+W[u.v[j]][j];
                 }
                 else{
-                    R[k+1]=R[k]-W[u.index[i]][j];
+                    R[k+1]=R[k]-W[u.v[j]][j];
                 }
             }
             R[0]=0;
