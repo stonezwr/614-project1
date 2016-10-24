@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <cstddef>
 
-#define HISTORY_LENGTH	6
+#define HISTORY_LENGTH	12
 #define number_of_perceptrons 2552
 #define MASK 		0x000003FF
 #define MAX_WEIGHT 127
@@ -30,7 +30,7 @@ public:
 class my_predictor : public branch_predictor 
 {
 public:
-	int W[H][number_of_perceptrons]; // table of weights	
+	int W[HISTORY_LENGTH][number_of_perceptrons]; // table of weights	
 	uint64_t SG; // hist reg
 	uint64_t path; // path reg
 
@@ -57,15 +57,19 @@ public:
 		bi = b;
 		if (b.br_flags & BR_CONDITIONAL) 
 		{
-			u.v[0] = (b.address) % (number_of_perceptrons+5);
+			for(int i=HISTORY_LENGTH-1;i>0;i--){
+				u.v[i]=u.v[i-1];
+			}
+			u.v[0]=(b.address) % (number_of_perceptrons);
 			u.yout = W[0][u.v[0]];
-			unsigned int seg; 			
-			for (int i = 1; i < H; i++) 
+//			unsigned int seg; 			
+			for (int i = 1; i < HISTORY_LENGTH; i++) 
 			{
 				// create segments starting from the most recent history bits and then 
 				// moving left
-				seg = ((SG ^ (path)) & (MASK << (i-1)*10)) >> (i-1)*10;
-				u.v[i] = ((seg) ^ (b.address << 1)) % (number_of_perceptrons-1);
+//				seg = ((SG ^ (path)) & (MASK << (i-1)*10)) >> (i-1)*10;
+//				u.v[i] = ((seg) ^ (b.address << 1)) % (number_of_perceptrons-1);
+				
 				u.yout += W[i][u.v[i]];	
             }
 			if (u.yout >= 0) 
