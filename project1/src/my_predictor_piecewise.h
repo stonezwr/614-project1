@@ -1,11 +1,11 @@
 // my_predictor.h
-// This is a perceptron branch predictor created by zhangwenrui@tamu.edu
+// This is a piecewise branch predictor created by zhangwenrui@tamu.edu
 
 #include <math.h>
 #include <stdint.h>
 #include <cstddef>
 
-#define HISTORY_LENGTH	16
+#define HISTORY_LENGTH	32
 #define ADDRESS 32
 #define MAX_WEIGHT 127
 #define MIN_WEIGHT -128 //restrict each weight to one byte	

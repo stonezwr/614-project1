@@ -1,5 +1,5 @@
 // my_predictor.h
-// This is a perceptron branch predictor created by zhangwenrui@tamu.edu
+// This is a fastpath branch predictor created by zhangwenrui@tamu.edu
 #include <list>
 #include <vector>
 #include <math.h>

@@ -31,10 +31,7 @@ class my_predictor : public branch_predictor
 {
 public:
 	int W[HISTORY_LENGTH][number_of_perceptrons]; // table of weights	
-	int SR[HISTORY_LENGTH];
-	int R[HISTORY_LENGTH];
 	uint64_t G;
-	uint64_t SG; // hist reg
 	uint64_t path; // path reg
 
 	my_predictor (void) 
@@ -47,12 +44,7 @@ public:
 				W[i][j] = 0;
 			}
 		}
-		for(int i=0;i<HISTORY_LENGTH;i++){
-			SR[i]=0;
-			R[i]=0;
-		}
 		G=0;
-		SG = 0;
 		
 	}
 	my_update u;
@@ -66,7 +58,7 @@ public:
 		if (b.br_flags & BR_CONDITIONAL) 
 		{
 			perceptron=(b.address) % (number_of_perceptrons);
-			u.yout = W[0][perceptron];//+SR[HISTORY_LENGTH-1];
+			u.yout = W[0][perceptron];
 
 			unsigned int seg;
 			
